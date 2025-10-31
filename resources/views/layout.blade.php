@@ -56,5 +56,10 @@
             </div>
         </main>
     </body>
+    <footer>
+    <div class="container text-center">
+        <p class="mb-0">Ассауп Самир Кайратович 241-3210</p>
+    </div>
+</footer>
 
 </html>
