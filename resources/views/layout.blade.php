@@ -50,7 +50,13 @@
                         </ul>
                     </ul>
                     <div class="d-flex">
-                        <a href="/auth/signin" class="btn btn-outline-success">SignIn</a>
+                        @guest
+                            <a href="/auth/signin" class="btn btn-outline-success mr-5">SignIn</a>
+                            <a href="/auth/login" class="btn btn-outline-success">SignOut</a>
+                        @endguest
+                        @auth
+                            <a href="/auth/logout" class="btn btn-outline-success">Exit</a>
+                        @endauth
                     </div>
                     </div>
                 </div>
