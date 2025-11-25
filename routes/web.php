@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\CommentController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -14,7 +15,13 @@ use App\Http\Controllers\ArticleController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-
+//Comments
+Route::controller(CommentController::class)->prefix('comment')->group(function(){
+    Route::post('/', 'store');
+    Route::get('/edit/{comment}', 'edit');
+    Route::post('/update/{comment}', 'update');
+    Route::get('/delete/{comment}', 'delete');
+});
 // Article
 Route::resource('/article', ArticleController::class)->middleware('auth:sanctum');
 // Auth
