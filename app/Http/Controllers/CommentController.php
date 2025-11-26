@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Mail;
 
 class CommentController extends Controller
 {
+    public function index(){
+        $comments = Comment::latest()->paginate(10);
+        return view('comment.index', ['comments'=>$comments]);
+    }
+
     public function store(Request $request){
         $request->validate([
             'text'=>'min:10|required',
@@ -22,7 +27,7 @@ class CommentController extends Controller
         $comment->user_id = auth()->id();
         if($comment->save())
             Mail::to('samirchiq1@mail.ru')->send(new Commentmail($comment, $article));
-        return redirect()->route('article.show', $request->article_id)->with('message', "Comment add succesful");
+        return redirect()->route('article.show', $request->article_id)->with('message', "Comment add succesful and enter for moderation");
 
     }
 
@@ -37,5 +42,16 @@ class CommentController extends Controller
     public function delete(Comment $comment){
         Gate::authorize('comment', $comment);
         return 0;
+    }
+    public function accept(Comment $comment){
+        $comment->accept = true;
+        $comment->save();
+        return redirect()->route('comment.index');
+    }
+
+    public function reject(Comment $comment){
+        $comment->accept = false;
+        $comment->save();
+        return redirect()->route('comment.index');
     }
 }

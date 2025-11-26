@@ -17,10 +17,13 @@ use App\Http\Controllers\CommentController;
 */
 //Comments
 Route::controller(CommentController::class)->prefix('comment')->group(function(){
+    Route::get('/', 'index')->name('comment.index');
     Route::post('/', 'store');
     Route::get('/edit/{comment}', 'edit');
     Route::post('/update/{comment}', 'update');
     Route::get('/delete/{comment}', 'delete');
+    Route::get('/accept/{comment}', 'accept');
+    Route::get('/reject/{comment}', 'reject');
 });
 // Article
 Route::resource('/article', ArticleController::class)->middleware('auth:sanctum');
