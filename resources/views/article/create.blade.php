@@ -20,6 +20,6 @@
     <label for="text" class="form-label">Enter description</label>
     <textarea name="text" id="text" class="form-control"></textarea>
   </div>
-  <button type="submit" class="btn btn-outline-primary">SignIn</button>
+  <button type="submit" class="btn btn-outline-primary">Create</button>
 </form>
 @endsection
