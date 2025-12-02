@@ -31,12 +31,29 @@ class SendStat extends Command
      */
     public function handle()
     {
-        $article_counts = Click::groupBy('article_id')->get()->map(function($item){
-            return ['article_title'=>$item->article_title, 'count'=>$item->count()];
-        });
+        Log::info('Запуск команды отправки статистики');
+        
+        // Правильный подсчет просмотров по статьям
+        $article_counts = Click::selectRaw('article_id, article_title, COUNT(*) as count')
+            ->groupBy('article_id', 'article_title')
+            ->get()
+            ->toArray();
+
+        Log::info('Статистика по статьям:', $article_counts);
+        Log::info('Количество записей в clicks: ' . Click::count());
+        // Удаляем старые записи после отправки
         Click::whereNotNull('article_id')->delete();
-        // Log::alert($article_counts);
+        
         $comments = Comment::whereDate('created_at', Carbon::today())->count();
-        Mail::to('samirchiq1@mail.ru')->send(new StatMail($comments, $article_counts));
+        Log::info('Количество комментариев за сегодня: ' . $comments);
+
+        try {
+            Mail::to('samirchiq1@mail.ru')->send(new StatMail($comments, $article_counts));
+            Log::info('Письмо отправлено успешно');
+        } catch (\Exception $e) {
+            Log::error('Ошибка отправки письма: ' . $e->getMessage());
+        }
+        
+        $this->info('Статистика отправлена успешно!');
     }
 }
