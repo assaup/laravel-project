@@ -7,6 +7,8 @@ use App\Models\Comment;
 use App\Models\User;
 use App\Models\Article;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use App\Jobs\VeryLongJob;
 use App\Notifications\NewCommentNotify;
@@ -14,7 +16,10 @@ use App\Notifications\NewCommentNotify;
 class CommentController extends Controller
 {
     public function index(){
-        $comments = Comment::latest()->paginate(10);
+        $page = (isset($_GET['page'])) ? $_GET["page"] : 0;
+        $comments = Cache::rememberForever('comments_'.$page, function(){
+        return Comment::latest()->paginate(10);
+        });
         return view('comment.index', ['comments'=>$comments]);
     }
 
@@ -27,8 +32,13 @@ class CommentController extends Controller
         $comment-> text = $request->text;
         $comment->article_id = $request->article_id;
         $comment->user_id = auth()->id();
-        if($comment->save())
+        if($comment->save()){
             VeryLongJob::dispatch($article, $comment, auth()->user()->name);
+            $keys = DB::table('cache')->whereRaw('`key` GLOB :key', [':key'=>'comments_*[0-9]'])->get();
+            foreach($keys as $param){
+                Cache::forget($param->key);
+            }
+        }
         return redirect()->route('article.show', $request->article_id)->with('message', "Comment add succesful and enter for moderation");
 
     }
@@ -38,11 +48,21 @@ class CommentController extends Controller
     }
     public function update(Comment $comment){
         Gate::authorize('comment', $comment);
+        if($comment->save()){
+            Cache::flush();
+        }
         return 0;
     }
 
     public function delete(Comment $comment){
         Gate::authorize('comment', $comment);
+        if($comment->save()){
+            Cache::forget('comments'.$comment->article_id);
+            $keys = DB::table('cache')->whereRaw('`key` GLOB :key', [':key'=>'comments_*[0-9]'])->get();
+            foreach($keys as $param){
+                Cache::forget($param->key);
+            }
+        }
         return 0;
     }
     public function accept(Comment $comment){
@@ -51,6 +71,7 @@ class CommentController extends Controller
         $users = User::where('id', '!=', $comment->user_id)->get();
         if($comment->save()){
             Notification::send($users, new NewCommentNotify($article->title, $article->id));
+            Cache::forget('comments'.$article->id);
         }
         return redirect()->route('comment.index');
     }

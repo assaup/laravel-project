@@ -27,6 +27,7 @@ Route::controller(CommentController::class)->prefix('comment')->group(function()
 });
 // Article
 Route::resource('/article', ArticleController::class)->middleware('auth:sanctum');
+Route::get('/article/{article}', [ArticleController::class, 'show'])->name('article.show');
 // Auth
 Route::get('auth/signin', [AuthController::class, 'signin']);
 Route::post('auth/registr', [AuthController::class, 'registr']);
