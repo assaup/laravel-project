@@ -18,7 +18,7 @@ class StatMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public $countComment)
+    public function __construct(public $countComment, public $articles)
     {
         //
     }
@@ -42,7 +42,8 @@ class StatMail extends Mailable
         return new Content(
             markdown: 'mail.stat',
             with:[
-                'countComment'=>$this->countComment
+                'countComment'=>$this->countComment,
+                'countArticle' => $this->articles
             ]
         );
     }

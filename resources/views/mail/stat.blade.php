@@ -1,7 +1,17 @@
+
 <x-mail::message>
 # Introduction
 
-The body of your message.
+Количество добавленных комментариев: {{$countComment}}
+
+Количество просмотров статей: {{$countArticle[0]['count']}}
+
+Просмотрены следующие статьи:
+@foreach($countArticle as $value)
+    
+        {{$value['article_title']}}
+    
+@endforeach
 
 <x-mail::button :url="''">
 Button Text

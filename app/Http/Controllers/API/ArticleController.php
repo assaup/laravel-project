@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Models\Article;
+use App\Models\Comment;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use App\Events\NewArticleEvent;
+use App\Http\Controllers\Controller;
+
+
+
+class ArticleController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $page = isset($_GET['page']) ? $_GET['page'] : 0;
+        $articles = Cache::remember('articles_'.$page, 300, function(){
+            return Article::latest()->paginate(5); 
+        });
+        return response()->json($articles);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $keys = DB::table('cache')->whereRaw('`key` GLOB :key', [':key'=>'articles_*[0-9]'])->get();
+        foreach($keys as $param){
+            Cache::forget($param->key);
+        }
+        Gate::authorize('create', Article::class);
+        $request->validate([
+            'date' => 'required|date',
+            'title' => 'required|min:10',
+            'text' => 'max:100'
+        ]);
+        $article = new Article;
+        $article->date_public = $request->date;
+        $article->title = request('title');
+        $article->text = $request->text;
+        $article->users_id = auth()->id();
+        if($article->save()){
+            NewArticleEvent::dispatch($article);
+        }
+        return response()->json($article);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Article $article)
+    {
+
+        if(isset($_GET['notify'])) auth()->user()->notifications->where('id', $_GET['notify'])->first()->markAsRead();
+        $comments = Cache::rememberForever('comments'.$article->id, function()use($article){
+            return Comment::where('article_id', $article->id)
+                            ->where('accept', true)
+                            ->get();
+        });
+        return response()->json(['article'=>$article, 'comments'=>$comments]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Article $article)
+    {
+        Gate::authorize('restore', $article);
+        return response()->json($article);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Article $article)
+    {
+        Gate::authorize('update', $article);
+        $request->validate([
+            'date' => 'required|date',
+            'title' => 'required|min:10',
+            'text' => 'max:100'
+        ]);
+        $article->date_public = $request->date;
+        $article->title = request('title');
+        $article->text = $request->text;
+        $article->users_id = 1;
+        if($article->save()){
+            $keys = DB::table('cache')->whereRaw('`key` GLOB :key', [':key'=>'articles_*[0-9]'])->get();
+            foreach($keys as $param){
+                Cache::forget($param->key);
+            }
+        }
+        return response('Update successful');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Article $article)
+    {
+        Gate::authorize('delete', $article);
+        if($article->delete()){
+            Cache::forget('comments'.$article->id);
+            $keys = DB::table('cache')->whereRaw('`key` GLOB :key', [':key'=>'articles_*[0-9]'])->get();
+            foreach($keys as $param){
+                Cache::forget($param->key);
+            }
+        }
+        return response('Delete successful');
+    }
+}
