@@ -43,27 +43,48 @@ class CommentController extends Controller
 
     }
 
-    public function edit(Comment $comment){
+    public function edit(Comment $comment)
+    {
         Gate::authorize('comment', $comment);
+        
+        return view('comment.edit', compact('comment'));
     }
-    public function update(Comment $comment){
+    public function update(Request $request, Comment $comment)
+    {
         Gate::authorize('comment', $comment);
-        if($comment->save()){
-            Cache::flush();
+        
+        $request->validate([
+            'text' => 'required|min:10',
+        ]);
+        
+        $comment->text = $request->text;
+        $comment->save();
+        
+        // Очистка кэша комментариев
+        $keys = DB::table('cache')->where('key', 'like', 'comments_%')->get();
+        foreach($keys as $key) {
+            Cache::forget($key->key);
         }
-        return 0;
+        
+        return redirect()->route('article.show', $comment->article_id)
+                        ->with('success', 'Комментарий обновлен');
     }
 
-    public function delete(Comment $comment){
+    public function delete(Comment $comment)
+    {
         Gate::authorize('comment', $comment);
-        if($comment->save()){
-            Cache::forget('comments'.$comment->article_id);
-            $keys = DB::table('cache')->whereRaw('`key` GLOB :key', [':key'=>'comments_*[0-9]'])->get();
-            foreach($keys as $param){
-                Cache::forget($param->key);
-            }
+        
+        $article_id = $comment->article_id;
+        $comment->delete();
+        
+        // Очистка кэша
+        $keys = DB::table('cache')->where('key', 'like', 'comments_%')->get();
+        foreach($keys as $key) {
+            Cache::forget($key->key);
         }
-        return 0;
+        
+        return redirect()->route('article.show', $article_id)
+                        ->with('success', 'Комментарий удален');
     }
     public function accept(Comment $comment){
         $comment->accept = true;
