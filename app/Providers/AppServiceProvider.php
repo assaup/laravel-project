@@ -24,7 +24,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Paginator::useBootstrap();
+        Paginator::useBootstrapFive();
+        Paginator::useBootstrapFour();
+        
         Gate::before(function(User $user){
             if ($user->role == "moderator")
                 return true;
