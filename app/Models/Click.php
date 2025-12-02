@@ -8,4 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Click extends Model
 {
     use HasFactory;
+    protected $fillable = [
+        'article_id',
+        'article_title'
+    ];
 }

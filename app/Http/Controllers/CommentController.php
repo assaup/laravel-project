@@ -71,7 +71,7 @@ class CommentController extends Controller
         $users = User::where('id', '!=', $comment->user_id)->get();
         if($comment->save()){
             Notification::send($users, new NewCommentNotify($article->title, $article->id));
-            Cache::forget('comments'.$article->id);
+            Cache::flush();
         }
         return redirect()->route('comment.index');
     }

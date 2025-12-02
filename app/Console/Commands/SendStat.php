@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Comment;
+use App\Models\Click;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Mail\StatMail;
 
 class SendStat extends Command
@@ -29,6 +31,10 @@ class SendStat extends Command
      */
     public function handle()
     {
+        $article_counts = Click::groupBy('article_id')->get()->map(function($item){
+            return ['article_id'=>$item->article_id, 'count'=>$item->count()];
+        });
+        Log::alert($article_counts);
         $comments = Comment::whereDate('created_at', Carbon::today())->count();
         Mail::to('samirchiq1@mail.ru')->send(new StatMail($comments));
     }
